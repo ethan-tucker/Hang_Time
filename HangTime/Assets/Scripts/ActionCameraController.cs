@@ -14,10 +14,8 @@ public class ActionCameraController : MonoBehaviour
     public bool RotateAroundPlayer = true;
 
     public float MaxRotationSpeed = 4f;
-    public Vector2 RotationSpeedMulitplier = new Vector2(1.5f, 1.5f);
+    public float RotationSpeedMulitplier = 1.5f;
     private float angleOfRotation;
-    private bool valid = true;
-
     void Start()
     {
         cameraOffset = transform.position - PlayerTransform.position;
@@ -33,8 +31,12 @@ public class ActionCameraController : MonoBehaviour
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
             Vector2 mouseMove = new Vector2(mouseX, mouseY);
-            mouseMove.Normalize();
-            mouseMove.Scale(RotationSpeedMulitplier);
+            //Debug.Log(mouseMove);
+            mouseMove = mouseMove.normalized;
+            //Debug.Log(mouseMove);
+            mouseMove = mouseMove * RotationSpeedMulitplier;
+            
+            Debug.Log(mouseMove);
 
             if (mouseX > 0){
                 mouseX = Mathf.Min(mouseMove.x, MaxRotationSpeed);
@@ -58,8 +60,8 @@ public class ActionCameraController : MonoBehaviour
             //angleOfRotation += mouseY;
             float angle = transform.eulerAngles.x;
             //Debug.Log(transform.eulerAngles.x);
-            if((mouseY > 0 && (angle + mouseY > 80) && (angle + mouseY < 160)) ||
-                (mouseY < 0 && (angle - mouseY < 290) && (angle - mouseY > 160)))
+            if((mouseY > 0 && ((angle + mouseY) >= 80) && ((angle + mouseY) < 160)) ||
+                (mouseY < 0 && ((angle - mouseY) <= 280) && ((angle - mouseY) > 160)))
             {
                 cameraOffset = camTurnAngleX * cameraOffset;
 
