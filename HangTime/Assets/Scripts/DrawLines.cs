@@ -19,7 +19,7 @@ public class DrawLines : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        SpawnLineGenerator();
+        //SpawnLineGenerator();
     }
 
     // Update is called once per frame
@@ -29,13 +29,14 @@ public class DrawLines : MonoBehaviour
         retDir.Normalize();
         retDir = retDir * rayLength;
 
-        if(true)
+        DetectPossibleGrapple(retDir);
+        if(Input.GetButtonDown("Fire1") && lastObjectHit)
         {
-            Shoot(retDir);
+            Shoot();
         }
         //Debug.Log(reticalPosition.position);
-        lRend.SetPosition(0, PlayerTransform.position);
-        lRend.SetPosition(1, PlayerTransform.position + retDir);
+        //lRend.SetPosition(0, PlayerTransform.position);
+        //lRend.SetPosition(1, PlayerTransform.position + retDir);
     }
     private void SpawnLineGenerator()
     {
@@ -47,11 +48,11 @@ public class DrawLines : MonoBehaviour
 
         //Destroy(newLineGen, 5);
     }
-    private void Shoot(Vector3 retDir)
+    private void DetectPossibleGrapple(Vector3 retDir)
     {
         RaycastHit hit;
         // To check in a circle around the reticle retDir would need to be changed
-        if(Physics.Raycast(CameraTransform.position, retDir, out hit, range))
+        if(Physics.SphereCast(CameraTransform.position, .5f, retDir, out hit, range))
         {
             //Debug.Log(hit.transform.name);
             GameObject curObjectHit = hit.transform.gameObject;
@@ -74,5 +75,14 @@ public class DrawLines : MonoBehaviour
                 lastObjectHit = null;
             }
         }
+    }
+    private void Shoot()
+    {
+        GameObject newLineGen = Instantiate(LineGeneratorPrefab);
+        LineRenderer lRend = newLineGen.GetComponent<LineRenderer>();
+
+        lRend.SetPosition(0, PlayerTransform.position);
+        lRend.SetPosition(1, lastObjectHit.transform.position);
+        Destroy(newLineGen, 1f);
     }
 }
