@@ -36,7 +36,7 @@ public class ActionCameraController : MonoBehaviour
             //Debug.Log(mouseMove);
             mouseMove = mouseMove * RotationSpeedMulitplier;
             
-            Debug.Log(mouseMove);
+            //Debug.Log(mouseMove);
 
             if (mouseX > 0){
                 mouseX = Mathf.Min(mouseMove.x, MaxRotationSpeed);
