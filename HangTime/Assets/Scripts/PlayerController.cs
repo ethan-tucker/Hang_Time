@@ -33,6 +33,13 @@ public class PlayerController : MonoBehaviour
             isGrounded = true;
         }
     }
+    private void OnTriggerEnter(Collider other) {
+        if(other.gameObject.tag == "Sphere")
+        {
+            GameObject GM = GameObject.Find("GrappleManager");
+            GM.GetComponent<DrawLines>().stopGrappling();
+        }
+    }
     
     void OnCollisionExit(Collision other)
     {

@@ -9,13 +9,18 @@ public class DrawLines : MonoBehaviour
     public Transform PlayerTransform;
     public Transform CameraTransform;
     public Transform reticalPosition;
-    public float xOffset;
-    public float yOffset;
     public int rayLength;
     private GameObject newLineGen;
     private LineRenderer lRend;
     public float range = 100f;
     private GameObject lastObjectHit = null;
+    private Vector3 grapplePoint;
+    private Vector3 grappleDir;
+    public float aimAssit = 2f;
+    private bool grappling = false;
+    private Rigidbody PlayerRB;
+    public Material[] SelectedMaterial;
+    public Material[] UnselectedMaterial;
     // Start is called before the first frame update
     void Start()
     {
@@ -33,56 +38,98 @@ public class DrawLines : MonoBehaviour
         if(Input.GetButtonDown("Fire1") && lastObjectHit)
         {
             Shoot();
+            UseGrappleForce();
+            grappling = true;
         }
-        //Debug.Log(reticalPosition.position);
-        //lRend.SetPosition(0, PlayerTransform.position);
-        //lRend.SetPosition(1, PlayerTransform.position + retDir);
-    }
-    private void SpawnLineGenerator()
-    {
-        newLineGen = Instantiate(LineGeneratorPrefab);
-        lRend = newLineGen.GetComponent<LineRenderer>();
-
-        lRend.SetPosition(0, PlayerTransform.position);
-        lRend.SetPosition(1, new Vector3(xOffset,yOffset,0));
-
-        //Destroy(newLineGen, 5);
+        if(grappling)
+        {
+            lRend.SetPosition(0, PlayerTransform.position);
+        }
     }
     private void DetectPossibleGrapple(Vector3 retDir)
     {
-        RaycastHit hit;
-        // To check in a circle around the reticle retDir would need to be changed
-        if(Physics.SphereCast(CameraTransform.position, .5f, retDir, out hit, range))
+        RaycastHit[] hit;
+        // Does a Raycast first and then if no objects are hit it attempst to do a 
+        // spherecast instead. This allows for precise aim when a player is point directly
+        // at an object as well as aim assit provided by the sphere cast.
+        bool somethingHit = false;
+        hit = Physics.RaycastAll(CameraTransform.position, retDir, range);
+        if(hit.Length == 0){
+            hit = Physics.SphereCastAll(CameraTransform.position, aimAssit, retDir, range);
+        }
+        if(hit != null)
+        //if(Physics.SphereCast(CameraTransform.position, .5f, retDir, out hit, range))
         {
-            //Debug.Log(hit.transform.name);
-            GameObject curObjectHit = hit.transform.gameObject;
-            if(lastObjectHit)
+            foreach (RaycastHit rHit in hit)
             {
-                if(lastObjectHit.name != curObjectHit.name)
+                if (!somethingHit)
                 {
-                    lastObjectHit.GetComponent<MeshRenderer>().material.color = Color.blue;  
+                    Transform hitTransform = rHit.transform;
+                    if (hitTransform.tag == "Sphere")
+                    {
+                        somethingHit = true;
+                        //Debug.Log(hit.transform.name);
+                        GameObject curObjectHit = hitTransform.gameObject;
+                        if (lastObjectHit)
+                        {
+                            if (lastObjectHit.name != curObjectHit.name)
+                            {
+                                lastObjectHit.GetComponent<MeshRenderer>().materials = UnselectedMaterial;
+                            }
+                        }
+                        lastObjectHit = curObjectHit;
+                        grapplePoint = rHit.point;
+                        MeshRenderer mr = hitTransform.GetComponent<MeshRenderer>();
+                        mr.materials = SelectedMaterial;
+                    }
                 }
             }
-            lastObjectHit = curObjectHit;
-            MeshRenderer mr= hit.transform.GetComponent<MeshRenderer>();
-            mr.material.color = Color.red;
+
         }
         // will be run if none of the rays hit
-        else{
+        if(!somethingHit){
             if(lastObjectHit)
             {
-                lastObjectHit.GetComponent<MeshRenderer>().material.color = Color.blue;
+                lastObjectHit.GetComponent<MeshRenderer>().materials = UnselectedMaterial;
                 lastObjectHit = null;
             }
         }
     }
     private void Shoot()
     {
-        GameObject newLineGen = Instantiate(LineGeneratorPrefab);
-        LineRenderer lRend = newLineGen.GetComponent<LineRenderer>();
+        if(newLineGen)
+        {
+            Destroy(newLineGen);
+        }
+        newLineGen = Instantiate(LineGeneratorPrefab);
+        lRend = newLineGen.GetComponent<LineRenderer>();
 
         lRend.SetPosition(0, PlayerTransform.position);
-        lRend.SetPosition(1, lastObjectHit.transform.position);
-        Destroy(newLineGen, 1f);
+        lRend.SetPosition(1, grapplePoint);
+        grappleDir = grapplePoint - PlayerTransform.position;
+        Debug.Log(grapplePoint);
+    }
+    private void UseGrapple()
+    {
+        //float grappleDistance = grapplePoint.magnitude;
+        float step = 1f * Time.deltaTime;
+        //Debug.Log(step);
+        PlayerTransform.position += grappleDir * step;
+        lRend.SetPosition(0, PlayerTransform.position);
+    }
+    private void UseGrappleForce()
+    {
+        PlayerRB = PlayerTransform.GetComponent<Rigidbody>();
+        PlayerRB.useGravity = false;
+        PlayerRB.velocity = Vector3.zero;
+        PlayerRB.AddForce(grappleDir.normalized * 10, ForceMode.Impulse);
+    }
+    public void stopGrappling()
+    {
+        PlayerRB.useGravity = true;
+        PlayerRB.AddForce(grappleDir.normalized * 4, ForceMode.Impulse);
+        //Debug.Log("Stopping Grappling");
+        grappling = false;
+        Destroy(newLineGen);
     }
 }
